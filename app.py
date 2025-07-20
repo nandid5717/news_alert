@@ -22,10 +22,10 @@ def load_data():
 def save_not_relevant(url, summary):
     """Save the 'Not Relevant' URLs to a separate CSV file."""
     if not os.path.exists(NOT_RELEVANT_FILE):
-        pd.DataFrame(columns=['URL', 'Summary']).to_csv(NOT_RELEVANT_FILE, index=False)
+        pd.DataFrame(columns=['SOURCEURL', 'Summary']).to_csv(NOT_RELEVANT_FILE, index=False)
     existing = pd.read_csv(NOT_RELEVANT_FILE)
-    if url not in existing['URL'].values:
-        new_row = pd.DataFrame([[url, summary]], columns=['URL', 'Summary'])
+    if url not in existing['SOURCEURL'].values:
+        new_row = pd.DataFrame([[url, summary]], columns=['SOURCEURL', 'Summary'])
         updated = pd.concat([existing, new_row], ignore_index=True)
         updated.to_csv(NOT_RELEVANT_FILE, index=False)
 
@@ -38,8 +38,8 @@ data = load_data()
 
 # Sidebar filters
 st.sidebar.header("Filters")
-selected_countries = st.sidebar.multiselect("Select Country", sorted(data['Country'].dropna().unique()))
-selected_dates = st.sidebar.multiselect("Select Date", sorted(data['Date'].dropna().unique()))
+selected_countries = st.sidebar.multiselect("Select Country", sorted(data['country'].dropna().unique()))
+selected_dates = st.sidebar.multiselect("Select Date", sorted(data['DATEADDED'].dropna().unique()))
 
 # Apply filters
 filtered_data = data.copy()
@@ -62,7 +62,7 @@ else:
                 st.write(row['Summary'])
             with cols[2]:
                 if st.checkbox("Not Relevant", key=f"chk_{idx}"):
-                    save_not_relevant(row['URL'], row['Summary'])
+                    save_not_relevant(row['SOURCEURL'], row['Summary'])
 
 st.write("---")
 st.write(f"**Not Relevant URLs are saved in:** `{NOT_RELEVANT_FILE}`")
