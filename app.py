@@ -13,16 +13,22 @@ def load_data():
     """Load and preprocess the dataset."""
     if not os.path.exists(DATA_FILE):
         st.error(f"Data file {DATA_FILE} not found!")
-        return pd.DataFrame(columns=['SOURCEURL', 'DATEADDED', 'ImportanceScore_2', 'country', 'Summary'])
+        return pd.DataFrame(columns=['sourceurl', 'dateadded', 'importancescore_2', 'country', 'summary'])
 
     df = pd.read_csv(DATA_FILE, sep=None, engine='python')
-    required_cols = ['SOURCEURL', 'DATEADDED', 'ImportanceScore_2', 'country', 'Summary']
+
+    # Normalize column names
+    df.columns = [c.strip().lower() for c in df.columns]
+
+    # Check for required columns
+    required_cols = ['sourceurl', 'dateadded', 'importancescore_2', 'country', 'summary']
     for col in required_cols:
         if col not in df.columns:
-            st.error(f"Missing column '{col}' in data.csv. Please fix the CSV header.")
+            st.error(f"Missing column '{col}' in data.csv. Found: {list(df.columns)}")
             st.stop()
 
-    df['DATEADDED'] = pd.to_datetime(df['DATEADDED'], format='%Y%m%d', errors='coerce').dt.date
+    # Convert DATEADDED to proper date
+    df['dateadded'] = pd.to_datetime(df['dateadded'], format='%Y%m%d', errors='coerce').dt.date
     return df
 
 def save_not_relevant(url, summary):
@@ -37,19 +43,27 @@ def save_not_relevant(url, summary):
 st.title("News URL Review Dashboard")
 data = load_data()
 
+if data.empty:
+    st.warning("No data available.")
+    st.stop()
+
+# Sidebar filters
 st.sidebar.header("Filters")
 
 country_options = sorted([c for c in data['country'].dropna().unique() if str(c).strip() != ''])
 selected_countries = st.sidebar.multiselect("Select Country", country_options)
-date_options = sorted(data['DATEADDED'].dropna().unique())
+
+date_options = sorted(data['dateadded'].dropna().unique())
 selected_dates = st.sidebar.multiselect("Select Date", date_options)
 
+# Apply filters
 filtered_data = data.copy()
 if selected_countries:
     filtered_data = filtered_data[filtered_data['country'].isin(selected_countries)]
 if selected_dates:
-    filtered_data = filtered_data[filtered_data['DATEADDED'].isin(selected_dates)]
+    filtered_data = filtered_data[filtered_data['dateadded'].isin(selected_dates)]
 
+# Show results
 st.write("### Filtered URLs")
 if filtered_data.empty:
     st.info("No data matches your filters.")
@@ -58,12 +72,12 @@ else:
         with st.container():
             cols = st.columns([3, 5, 2])
             with cols[0]:
-                st.markdown(f"[{row['SOURCEURL']}]({row['SOURCEURL']})")
+                st.markdown(f"[{row['sourceurl']}]({row['sourceurl']})")
             with cols[1]:
-                st.write(row['Summary'])
+                st.write(row['summary'])
             with cols[2]:
                 if st.checkbox("Not Relevant", key=f"chk_{idx}"):
-                    save_not_relevant(row['SOURCEURL'], row['Summary'])
+                    save_not_relevant(row['sourceurl'], row['summary'])
 
 st.write("---")
 st.write(f"**Not Relevant URLs are saved in:** `{NOT_RELEVANT_FILE}`")
